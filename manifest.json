@@ -1,0 +1,15 @@
+{
+  "name": "哲学しろ！",
+  "short_name": "哲学しろ！",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#FDF5E9",
+  "theme_color": "#FB7101",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="哲学しろ！">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<title>哲学しろ！</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: #FDF5E9;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 24px 20px;
+    overflow: hidden;
+  }
+
+  /* Streak display */
+  .streak-area {
+    text-align: center; margin-bottom: 16px;
+  }
+  .streak-label {
+    font-size: 12px; font-weight: 700; color: #597BAC;
+    letter-spacing: 2px;
+  }
+  .streak-number {
+    font-size: 72px; font-weight: 900; color: #FB7101;
+    line-height: 1;
+  }
+  .streak-unit {
+    font-size: 20px; font-weight: 900; color: #0C2D77;
+    margin-left: 2px;
+  }
+  .streak-sub {
+    font-size: 11px; color: #597BAC; margin-top: 4px;
+  }
+
+  /* Datechan */
+  .datechan-area {
+    position: relative;
+    margin: 16px 0;
+  }
+  .datechan-img {
+    width: 180px; height: 180px; object-fit: contain;
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,0.12));
+    transition: transform 0.3s;
+  }
+  .datechan-img.bounce {
+    animation: bounce 0.6s ease;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-16px); }
+    60% { transform: translateY(-6px); }
+  }
+
+  /* Speech bubble */
+  .bubble {
+    background: #FEFEFE;
+    border-radius: 20px;
+    padding: 16px 20px;
+    margin: 0 10px 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    position: relative;
+    text-align: center;
+    min-height: 60px;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.3s;
+  }
+  .bubble::after {
+    content: '';
+    position: absolute; bottom: -10px; left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid #FEFEFE;
+  }
+  .bubble-text {
+    font-size: 15px; font-weight: 700; color: #0C2D77;
+    line-height: 1.6;
+  }
+
+  /* Button */
+  .philosophy-btn {
+    width: 100%; max-width: 300px;
+    padding: 18px; border: none; border-radius: 20px;
+    font-size: 18px; font-weight: 900; color: white;
+    font-family: inherit; cursor: pointer;
+    background: linear-gradient(135deg, #FB7101, #F96E00);
+    box-shadow: 0 4px 16px rgba(251,113,1,0.35);
+    transition: transform 0.15s;
+    margin-top: 8px;
+  }
+  .philosophy-btn:active { transform: scale(0.96); }
+  .philosophy-btn.done {
+    background: #C6B8A4;
+    box-shadow: none;
+    cursor: default;
+  }
+
+  /* Progress dots */
+  .progress {
+    display: flex; gap: 12px; margin-top: 16px;
+    align-items: center;
+  }
+  .progress-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid #FB7101;
+    transition: all 0.3s;
+  }
+  .progress-dot.filled {
+    background: #FB7101;
+  }
+  .progress-label {
+    font-size: 11px; color: #597BAC; font-weight: 700;
+  }
+
+  /* History */
+  .history-toggle {
+    margin-top: 24px;
+    font-size: 12px; font-weight: 700; color: #597BAC;
+    cursor: pointer; border: none; background: none;
+    font-family: inherit; text-decoration: underline;
+  }
+  .history-panel {
+    display: none;
+    margin-top: 12px;
+    width: 100%; max-width: 300px;
+  }
+  .history-panel.active { display: block; }
+  .history-item {
+    display: flex; justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #F0EBE3;
+    font-size: 12px; color: #0C2D77;
+  }
+  .history-dots {
+    display: flex; gap: 4px;
+  }
+  .history-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .history-dot.done { background: #FB7101; }
+  .history-dot.missed { background: #E0E0E0; }
+
+  /* Reset button */
+  .reset-btn {
+    margin-top: 16px;
+    font-size: 10px; color: #C6B8A4;
+    cursor: pointer; border: none; background: none;
+    font-family: inherit;
+  }
+</style>
+</head>
+<body>
+
+<div class="streak-area">
+  <div class="streak-label">継続日数</div>
+  <div>
+    <span class="streak-number" id="streak-count">0</span>
+    <span class="streak-unit">日</span>
+  </div>
+  <div class="streak-sub" id="streak-sub"></div>
+</div>
+
+<div class="bubble">
+  <div class="bubble-text" id="bubble-text">読み込み中...</div>
+</div>
+
+<div class="datechan-area">
+  <img class="datechan-img" id="datechan" src="datechan.png" alt="伊達ちゃん">
+</div>
+
+<button class="philosophy-btn" id="main-btn" onclick="recordPhilosophy()">哲学した！</button>
+
+<div class="progress">
+  <div class="progress-dot" id="dot-1"></div>
+  <span class="progress-label" id="progress-label">今日まだ</span>
+</div>
+
+<button class="history-toggle" onclick="toggleHistory()">履歴を見る</button>
+<div class="history-panel" id="history-panel"></div>
+
+<button class="reset-btn" onclick="if(confirm('本当にリセットしますか？伊達ちゃんが泣きます。'))resetAll()">データリセット</button>
+
+<script>
+const STORAGE_KEY = 'philosophy_data';
+
+// 伊達ちゃんの煽りメッセージ
+const messages = {
+  // 0回目（まだやってない）
+  notYet: [
+    'まだ哲学してないの？\nボーヴォワール待ってるよ？',
+    '今日もサボるつもり？\n伊達ちゃん見てるからね。',
+    'デカルトもカントも\n毎日考えてたよ？',
+    'スマホ見る暇あるなら\n哲学できるでしょ？',
+    '「明日やる」は\n哲学者の言葉じゃないよ。',
+    'ほら、本開いて。\n伊達ちゃん応援してるから。',
+  ],
+  // 完了（本日コンプリート）
+  complete: [
+    '今日の哲学クリア！\n哲学者の鑑だね！',
+    'パーフェクト！\n伊達ちゃん感動してる！',
+    'えらい！\nボーヴォワールも喜んでるよ！',
+    '完璧！明日も頑張ろうね！\n伊達ちゃん待ってるから。',
+    'やるじゃん！\n伊達ちゃん嬉しい！',
+  ],
+  // 継続ボーナス
+  streak: {
+    3: 'お！3日連続！\nでもまだDuolingoに負けてるよ？',
+    5: '5日連続！\nちょっと哲学者っぽくなってきた？',
+    7: '1週間継続！\n伊達ちゃん正直見直した。',
+    10: '10日！？本気じゃん。\n伊達ちゃん尊敬する。',
+    14: '2週間！もう習慣だね。\nソクラテスも認めるレベル。',
+    21: '21日！習慣化完了！\nもう哲学者名乗っていいよ。',
+    30: '1ヶ月！！\n伊達ちゃん泣いてる（嬉し涙）',
+    50: '50日...あなた本物の\n哲学者ですね。脱帽。',
+    100: '100日達成！！！\n伊達ちゃん弟子入りします。',
+  },
+  // 連続途切れた時
+  broken: [
+    'あれ？昨日サボった？\nまぁ...今日から再スタート！',
+    '連続記録途切れちゃったね。\nでも大事なのは今日だよ。',
+    '伊達ちゃん昨日寂しかった。\n今日は哲学してね？',
+  ],
+};
+
+function getToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return { streak: 0, todayCount: 0, lastDate: '', history: [] };
+  return JSON.parse(raw);
+}
+
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function random(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function getMessage(data) {
+  const today = getToday();
+  const isNewDay = data.lastDate !== today;
+  const todayCount = isNewDay ? 0 : data.todayCount;
+
+  // Check if streak was broken
+  if (data.lastDate && isNewDay) {
+    const last = new Date(data.lastDate);
+    const now = new Date(today);
+    const diff = Math.floor((now - last) / (1000 * 60 * 60 * 24));
+    if (diff > 1 && data.streak > 0) {
+      return random(messages.broken);
+    }
+  }
+
+  // Streak milestones
+  const streakKeys = Object.keys(messages.streak).map(Number).sort((a,b) => b-a);
+  for (const k of streakKeys) {
+    if (data.streak === k && todayCount > 0) {
+      return messages.streak[k];
+    }
+  }
+
+  // Based on today's count
+  if (todayCount === 0) return random(messages.notYet);
+  return random(messages.complete);
+}
+
+function updateUI() {
+  const data = getData();
+  const today = getToday();
+  const isNewDay = data.lastDate !== today;
+  let todayCount = isNewDay ? 0 : data.todayCount;
+
+  // Check streak
+  let streak = data.streak;
+  if (data.lastDate && isNewDay) {
+    const last = new Date(data.lastDate);
+    const now = new Date(today);
+    const diff = Math.floor((now - last) / (1000 * 60 * 60 * 24));
+    if (diff > 1) streak = 0; // broken
+  }
+
+  document.getElementById('streak-count').textContent = streak;
+  document.getElementById('bubble-text').textContent = getMessage(data);
+
+  // Streak sub text
+  const subEl = document.getElementById('streak-sub');
+  if (streak >= 7) subEl.textContent = '最長記録を更新中！';
+  else if (streak >= 3) subEl.textContent = 'いい調子！';
+  else if (streak > 0) subEl.textContent = 'まだまだこれから！';
+  else subEl.textContent = '';
+
+  // Progress dot
+  document.getElementById('dot-1').classList.toggle('filled', todayCount >= 1);
+  document.getElementById('progress-label').textContent = todayCount >= 1 ? '今日クリア！' : 'まだ';
+
+  // Button state
+  const btn = document.getElementById('main-btn');
+  if (todayCount >= 1) {
+    btn.textContent = '今日はもう完璧！';
+    btn.classList.add('done');
+  } else {
+    btn.textContent = '哲学した！';
+    btn.classList.remove('done');
+  }
+}
+
+function recordPhilosophy() {
+  const data = getData();
+  const today = getToday();
+  const isNewDay = data.lastDate !== today;
+
+  let todayCount = isNewDay ? 0 : data.todayCount;
+  if (todayCount >= 1) return; // already done
+
+  todayCount++;
+
+  // Calculate streak
+  let streak = data.streak;
+  if (isNewDay) {
+    if (data.lastDate) {
+      const last = new Date(data.lastDate);
+      const now = new Date(today);
+      const diff = Math.floor((now - last) / (1000 * 60 * 60 * 24));
+      if (diff === 1) {
+        // Only increment streak when first record of a new consecutive day
+        if (data.todayCount >= 1) streak++; // yesterday had at least 1
+        else streak = 1;
+      } else if (diff > 1) {
+        streak = 1; // reset
+      }
+    } else {
+      streak = 1; // first ever
+    }
+  }
+
+  // Update history
+  let history = data.history || [];
+  const existingIdx = history.findIndex(h => h.date === today);
+  if (existingIdx >= 0) {
+    history[existingIdx].count = todayCount;
+  } else {
+    history.push({ date: today, count: todayCount });
+  }
+  // Keep last 30 days
+  history = history.slice(-30);
+
+  saveData({
+    streak,
+    todayCount,
+    lastDate: today,
+    history,
+  });
+
+  // Animate
+  const datechan = document.getElementById('datechan');
+  datechan.classList.remove('bounce');
+  void datechan.offsetWidth;
+  datechan.classList.add('bounce');
+
+  updateUI();
+}
+
+function toggleHistory() {
+  const panel = document.getElementById('history-panel');
+  panel.classList.toggle('active');
+  if (panel.classList.contains('active')) renderHistory();
+}
+
+function renderHistory() {
+  const data = getData();
+  const history = (data.history || []).slice().reverse();
+  const panel = document.getElementById('history-panel');
+
+  if (history.length === 0) {
+    panel.innerHTML = '<div style="text-align:center;font-size:12px;color:#C6B8A4;padding:12px;">まだ記録がありません</div>';
+    return;
+  }
+
+  panel.innerHTML = history.map(h => {
+    const dots = `<div class="history-dot ${h.count >= 1 ? 'done' : 'missed'}"></div>`;
+    const d = new Date(h.date);
+    const label = `${d.getMonth()+1}/${d.getDate()}`;
+    return `<div class="history-item"><span>${label}</span><div class="history-dots">${dots}</div></div>`;
+  }).join('');
+}
+
+function resetAll() {
+  localStorage.removeItem(STORAGE_KEY);
+  updateUI();
+}
+
+// Init
+updateUI();
+</script>
+
+</body>
+</html>
