@@ -7,7 +7,7 @@
   "theme_color": "#FB7101",
   "icons": [
     {
-      "src": "datechan.png",
+      "src": "app_philo.png",
       "sizes": "192x192",
       "type": "image/png"
     }
