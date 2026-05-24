@@ -7,7 +7,7 @@
   "theme_color": "#FB7101",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "datechan.png",
       "sizes": "192x192",
       "type": "image/png"
     }
